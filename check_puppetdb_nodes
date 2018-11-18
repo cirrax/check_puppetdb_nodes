@@ -39,6 +39,7 @@ my $np = Monitoring::Plugin->new(
     usage => "Usage: %s [ -H|--hostname=<hostname>] "
       . "[ -p|--port=<port> ] [-s] [ -w|--warning=<minutes> ] "
       . "[ -c|--critical=<minutes> ] [ -W|--warnfails=<num> ] "
+      . "[ --critnoops=<num> ] [ --warnnoops=<num> ] "
       . "[ -C|--critfails=<num> ] [ -n|--node=<node> ]"
       . "[ -a|--apiversion=<num> ]",
     shortname => 'Check last node runs from PuppetDB',
@@ -75,6 +76,20 @@ $np->add_arg(
     help => "Exit with CRITICAL status if nodes had at least INTEGER "
       . "failures in the last run (default: %s)",
     default => 1,
+);
+
+$np->add_arg(
+    spec => 'warnnoops',
+    help => "Exit with WARNING status if nodes had at least INTEGER "
+      . "noops in the last run (default: %s)",
+    default => 1,
+);
+
+$np->add_arg(
+    spec => 'critnoops',
+    help => "Exit with CRITICAL status if nodes had at least INTEGER "
+      . "noops in the last run (default: %s)",
+    default => 999,
 );
 
 $np->add_arg(
@@ -203,13 +218,29 @@ foreach my $node (@$data) {
                 $failures = @$node_data[0]->{'failures'};
             }
 
+            my $noops = 0;
+            if (    defined( @$node_data[0] )
+                and defined( @$node_data[0]->{'noops'} ) )
+            {
+                $noops = @$node_data[0]->{'noops'};
+            }
+
             if ( $failures >= $np->opts->critfails ) {
                 $np->add_message( CRITICAL,
-                    "$certname had $failures failures in the last run\n" );
+                    "$certname had $failures failures in the last run ($noops noops)\n" );
             }
             elsif ( $failures >= $np->opts->warnfails ) {
                 $np->add_message( WARNING,
-                    "$certname had $failures failures in the last run\n" );
+                    "$certname had $failures failures in the last run ($noops noops)\n" );
+            }
+
+            if ( $noops >= $np->opts->critnoops ) {
+                $np->add_message( CRITICAL,
+                    "$certname had $noops noops in the last run\n" );
+            }
+            elsif ( $noops >= $np->opts->warnnoops ) {
+                $np->add_message( WARNING,
+                    "$certname had $noops noops in the last run\n" );
             }
             elsif ( exists $apiurls{$np->opts->apiversion}{'logs'} ) {
                 my $apiurl = $apiurls{$np->opts->apiversion}{'logs'};

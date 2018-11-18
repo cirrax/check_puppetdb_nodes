@@ -21,6 +21,8 @@ object CheckCommand "puppetdb-node" {
                 "--critical" = "$crit_lag$"
                 "--warnfails" = "$warn_fails$"
                 "--critfails" = "$crit_fails$"
+                "--warnnoops" = "$warn_noops$"
+                "--critnoops" = "$crit_noops$"
                 }
 
   vars.node_name = "$host_name$"
@@ -28,6 +30,8 @@ object CheckCommand "puppetdb-node" {
   vars.crit_lag = 120
   vars.warn_fails = 1
   vars.crit_fails = 1
+  vars.warn_noops = 1
+  vars.crit_noops = 999
 }
 
 apply Service "puppet agent" {
